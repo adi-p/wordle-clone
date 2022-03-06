@@ -28,7 +28,6 @@ class Wordle:
 		if word in self.words:
 			self.goal = word
 		else:
-			print(self.words[:10])
 			raise Exception("Chosen word is not in the word list")
 
 	def choose_goal_word(self):
@@ -61,6 +60,83 @@ class Wordle:
 
 
 
+# Naive solution
+class Wordle_Solver:
+
+	def __init__(self, wordle, allowed_guesses):
+		self.wordle = wordle
+		self.allowed_guesses = allowed_guesses
+		self.allowed_guesses_original = allowed_guesses
+
+	def reset(self):
+		self.allowed_guesses = self.allowed_guesses_original
+
+	def solve(self, goal_word = None):
+		if goal_word:
+			self.wordle.set_goal_word(goal_word)
+		else:
+			self.wordle.choose_goal_word()
+		
+		result = None
+		prev_word = None
+		CORRECT_RESULT = [ Correct_Code.GREEN for i in range(5) ]
+		tries = 0
+
+		while not result == CORRECT_RESULT:
+			word = self.make_guess(result, prev_word)
+			tries += 1
+
+			result = self.wordle.get_guess_results(word)
+			prev_word = word
+
+		return tries
+
+
+	def make_guess(self, prev_result = None, prev_guess = None):
+		def filter_guess(guess):
+			if guess == prev_guess:
+				return False
+
+			for idx, corr_code in enumerate(prev_result):
+				if corr_code == Correct_Code.GREEN and guess[idx] != prev_guess[idx]:
+					return False
+				elif corr_code == Correct_Code.YELLOW and not prev_guess[idx] in guess:
+					# There are more subleties to the YELLOW case that we are not taking care of right now
+					return False
+			
+			return True
+
+		if prev_result and prev_guess:
+			self.allowed_guesses = list(filter(filter_guess, self.allowed_guesses))
+
+		return random.choice(self.allowed_guesses)
+
+
+def human_solve(wordle):
+	result = None
+	prev_word = None
+	CORRECT_RESULT = [ Correct_Code.GREEN for i in range(5) ]
+	guess_count = 0
+
+	while not result == CORRECT_RESULT:
+		word = input("Guess a 5 letter word: ").lower()
+
+		if(not len(word) == 5):
+			print("The word must be 5 letters.")
+			continue
+		elif not wordle.is_allowed_guess(word):
+			print("This guess is not allowed")
+			continue 
+
+		guess_count += 1
+
+		result = wordle.get_guess_results(word)
+		prev_word = word
+		print(word, result)
+
+	print(f"You won, the word was {wordle.goal}")
+	print(f"You took {guess_count} tries")
+
 
 def load_words(file):
 	words = []
@@ -75,35 +151,21 @@ def main():
 	answer_words = load_words("answers.txt")
 
 	wordle = Wordle(answer_words, allowed_guesses)
+	solver = Wordle_Solver(wordle, allowed_guesses)
 
-	# wordle.set_goal_word('expel')
+	results = []
+	for word in answer_words:
+		try_count = solver.solve(word)
+		results.append({ "word": word, "count": try_count})
+		solver.reset()
 
-	# print(wordle.get_guess_results('lives'))
-	# print(wordle.get_guess_results('elves'))
-	# print(wordle.get_guess_results('slump'))
-	# print(wordle.get_guess_results('yummy'))
-	# print(wordle.get_guess_results('uymjy'))
+	average = sum(map(lambda el: el["count"], results)) / len(answer_words)
 
-	wordle.choose_goal_word()
-
-	result = []
-	CORRECT_RESULT = [ Correct_Code.GREEN for i in range(5) ]
-	while not result == CORRECT_RESULT:
-		word = input("Guess a 5 letter word: ").lower()
-
-		if(not len(word) == 5):
-			print("The word must be 5 letters.")
-			continue
-		elif not wordle.is_allowed_guess(word):
-			print("This guess is not allowed")
-			continue 
-
-		result = wordle.get_guess_results(word)
-		print(result)
-
-	print(f"You won, the word was {wordle.goal}")
-
-
-
+	max_el = reduce(lambda el, max_el: max_el if max_el["count"] > el["count"] else el, results)
+	min_el = reduce(lambda el, min_el: min_el if min_el["count"] < el["count"] else el, results)
+	print(f"Average try count { average }")
+	print(f"Max try {max_el['count']} for word {max_el['word']}")
+	print(f"Min try {min_el['count']} for word {min_el['word']}")
+	
 if __name__ == "__main__":
     main()
