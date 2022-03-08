@@ -103,6 +103,9 @@ class Wordle_Solver:
 				elif corr_code == Correct_Code.YELLOW and not prev_guess[idx] in guess:
 					# There are more subleties to the YELLOW case that we are not taking care of right now
 					return False
+				elif corr_code == Correct_Code.GREY and prev_guess[idx] == guess[idx]:
+					# We are not dealing with GREY not being in the word at all because I want to keep this simple
+					return False
 			
 			return True
 
