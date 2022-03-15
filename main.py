@@ -93,23 +93,42 @@ class Wordle_Solver:
 
 
 	def make_guess(self, prev_result = None, prev_guess = None):
-		def filter_guess(guess):
-			if guess == prev_guess:
-				return False
+		if prev_result and prev_guess:
+			greens = {}
+			yellows = {}
+			greys = {}
 
 			for idx, corr_code in enumerate(prev_result):
-				if corr_code == Correct_Code.GREEN and guess[idx] != prev_guess[idx]:
-					return False
-				elif corr_code == Correct_Code.YELLOW and not prev_guess[idx] in guess:
-					# There are more subleties to the YELLOW case that we are not taking care of right now
-					return False
-				elif corr_code == Correct_Code.GREY and prev_guess[idx] == guess[idx]:
-					# We are not dealing with GREY not being in the word at all because I want to keep this simple
-					return False
-			
-			return True
+				if corr_code == Correct_Code.GREEN:
+					greens[idx] = prev_guess[idx]
+				elif corr_code == Correct_Code.YELLOW:
+					yellows[idx] = prev_guess[idx]
+				elif corr_code == Correct_Code.GREY:
+					greys[idx] = prev_guess[idx]
 
-		if prev_result and prev_guess:
+			def filter_guess(guess):
+				if guess == prev_guess:
+					return False
+
+				for idx, el in greens.items():
+					if guess[idx] != prev_guess[idx]:
+						return False
+
+				for idx, el in yellows.items():
+					# this doesn't deal with two yellows for the same letter. As long as the letter appears once, the word will not be filtered.
+					if not prev_guess[idx] in guess:
+						return False
+
+				for idx, el in greys.items():
+					if guess[idx] == prev_guess[idx]:
+						return False 
+
+					if (not prev_guess[idx] in yellows.values() and not prev_guess[idx] in greens.values()) and prev_guess[idx] in guess:
+						return False
+				
+				return True
+
+		
 			self.allowed_guesses = list(filter(filter_guess, self.allowed_guesses))
 
 		return random.choice(self.allowed_guesses)
