@@ -4,6 +4,8 @@ from enum import Enum
 from functools import reduce
 import random
 
+## TODO ##
+# Consider using pandas (maybe numpy) for this
 
 class Correct_Code(Enum):
 	GREEN = 1
@@ -89,50 +91,103 @@ class Wordle_Solver:
 			result = self.wordle.get_guess_results(word)
 			prev_word = word
 
+		self.reset()
+
 		return tries
 
 
-	def make_guess(self, prev_result = None, prev_guess = None):
-		if prev_result and prev_guess:
+	def filter_words(results, guess, word_list):
 			greens = {}
 			yellows = {}
 			greys = {}
 
-			for idx, corr_code in enumerate(prev_result):
+			for idx, corr_code in enumerate(results):
 				if corr_code == Correct_Code.GREEN:
-					greens[idx] = prev_guess[idx]
+					greens[idx] = guess[idx]
 				elif corr_code == Correct_Code.YELLOW:
-					yellows[idx] = prev_guess[idx]
+					yellows[idx] = guess[idx]
 				elif corr_code == Correct_Code.GREY:
-					greys[idx] = prev_guess[idx]
+					greys[idx] = guess[idx]
 
-			def filter_guess(guess):
-				if guess == prev_guess:
+			def filter_guess(word):
+				if word == guess:
 					return False
 
 				for idx, el in greens.items():
-					if guess[idx] != prev_guess[idx]:
+					if word[idx] != guess[idx]:
 						return False
 
 				for idx, el in yellows.items():
-					# this doesn't deal with two yellows for the same letter. As long as the letter appears once, the word will not be filtered.
-					if not prev_guess[idx] in guess:
+					# TODO this doesn't deal with two yellows for the same letter. As long as the letter appears once, the word will not be filtered.
+					if not guess[idx] in word:
 						return False
 
 				for idx, el in greys.items():
-					if guess[idx] == prev_guess[idx]:
+					if word[idx] == guess[idx]:
 						return False 
 
-					if (not prev_guess[idx] in yellows.values() and not prev_guess[idx] in greens.values()) and prev_guess[idx] in guess:
+					if (not guess[idx] in yellows.values() and not guess[idx] in greens.values()) and guess[idx] in word:
 						return False
 				
 				return True
 
-		
-			self.allowed_guesses = list(filter(filter_guess, self.allowed_guesses))
+			return list(filter(filter_guess, word_list))
+
+
+	def make_guess(self, prev_result = None, prev_guess = None):
+		if prev_result and prev_guess:
+			self.allowed_guesses = Wordle_Solver.filter_words(prev_result, prev_guess, self.allowed_guesses)
 
 		return random.choice(self.allowed_guesses)
 
+
+# class Wordle_Solver_2:
+
+# 	def __init__(self, wordle, allowed_guesses):
+# 		self.wordle = wordle
+# 		self.allowed_guesses = allowed_guesses
+# 		self.allowed_final_guesses = allowed_guesses
+# 		self.allowed_guesses_original = allowed_guesses
+# 		# do I do set up here?
+# 		# What do I set up?
+# 		# rank words by entropy
+# 		#		- given a word, how much does the list reduce by on average over any kind of result it gives
+
+# 	def train(self):
+
+# 		possible_results = [  ]
+
+
+# 	def reset(self):
+# 		self.allowed_guesses = self.allowed_guesses_original
+
+
+# 	# NOTE: this is just a duplicate of the solve() func on Wordle_Solver, maybe think about how to remove this duplication
+# 	def solve(self, goal_word = None):
+# 		if goal_word:
+# 			self.wordle.set_goal_word(goal_word)
+# 		else:
+# 			self.wordle.choose_goal_word()
+		
+# 		result = None
+# 		prev_word = None
+# 		CORRECT_RESULT = [ Correct_Code.GREEN for i in range(5) ]
+# 		tries = 0
+
+# 		while not result == CORRECT_RESULT:
+# 			word = self.make_guess(result, prev_word)
+# 			tries += 1
+
+# 			result = self.wordle.get_guess_results(word)
+# 			prev_word = word
+
+# 		self.reset()
+
+# 		return tries
+
+
+# 	def make_guess(self, prev_result = None, prev_guess = None):
+		
 
 def human_solve(wordle):
 	result = None
@@ -173,13 +228,16 @@ def main():
 	answer_words = load_words("answers.txt")
 
 	wordle = Wordle(answer_words, allowed_guesses)
+	
+	
+	
+	
 	solver = Wordle_Solver(wordle, allowed_guesses)
 
 	results = []
 	for word in answer_words:
 		try_count = solver.solve(word)
 		results.append({ "word": word, "count": try_count})
-		solver.reset()
 
 	average = sum(map(lambda el: el["count"], results)) / len(answer_words)
 
