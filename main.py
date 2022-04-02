@@ -30,7 +30,7 @@ class Wordle:
 		if word in self.words:
 			self.goal = word
 		else:
-			raise Exception("Chosen word is not in the word list")
+			raise Exception(f"Chosen word: {word} is not in the word list")
 
 	def choose_goal_word(self):
 		self.goal = random.choice(self.words)
@@ -141,52 +141,77 @@ class Wordle_Solver:
 		return random.choice(self.allowed_guesses)
 
 
-# class Wordle_Solver_2:
+class Wordle_Solver_2:
 
-# 	def __init__(self, wordle, allowed_guesses):
-# 		self.wordle = wordle
-# 		self.allowed_guesses = allowed_guesses
-# 		self.allowed_final_guesses = allowed_guesses
-# 		self.allowed_guesses_original = allowed_guesses
-# 		# do I do set up here?
-# 		# What do I set up?
-# 		# rank words by entropy
-# 		#		- given a word, how much does the list reduce by on average over any kind of result it gives
+	def __init__(self, wordle, allowed_guesses):
+		self.wordle = wordle
+		self.allowed_guesses = allowed_guesses
+		self.allowed_final_guesses = allowed_guesses
+		self.allowed_guesses_original = allowed_guesses
+		# do I do set up here?
+		# What do I set up?
+		# rank words by entropy
+		#		- given a word, how much does the list reduce by on average over any kind of result it gives
 
-# 	def train(self):
+	def train(self):
 
-# 		possible_results = [  ]
+		# TODO: add more possible results
+		possible_results = [ [ Correct_Code.GREY for i in range(5) ], [ Correct_Code.GREEN for i in range(5) ], [ Correct_Code.YELLOW for i in range(5) ] ] # TODO: every permutation of a result
+
+		word_scores = []
+
+		# TODO: see if it is possible to choose words from outside allowed_guesses that help reduce search space
+		# Along the same vein see if the filtering for words is done as smartly as it can be.
+		for word in self.allowed_guesses:
+
+			total_remaining = 0
+
+			for result in possible_results:
+				filtered_word_list = Wordle_Solver.filter_words(result, word, self.allowed_guesses)
+				total_remaining += len(filtered_word_list)
+			
+			word_scores.append((word, total_remaining))
 
 
-# 	def reset(self):
-# 		self.allowed_guesses = self.allowed_guesses_original
+		word_scores.sort(key=(lambda el: el[1]))
+
+		self.allowed_guesses = list(map(lambda el: el[0], word_scores))
+
+	def reset(self):
+		self.allowed_guesses = self.allowed_guesses_original
 
 
-# 	# NOTE: this is just a duplicate of the solve() func on Wordle_Solver, maybe think about how to remove this duplication
-# 	def solve(self, goal_word = None):
-# 		if goal_word:
-# 			self.wordle.set_goal_word(goal_word)
-# 		else:
-# 			self.wordle.choose_goal_word()
+	# NOTE: this is just a duplicate of the solve() func on Wordle_Solver, maybe think about how to remove this duplication
+	def solve(self, goal_word = None):
+		if goal_word:
+			self.wordle.set_goal_word(goal_word)
+		else:
+			self.wordle.choose_goal_word()
 		
-# 		result = None
-# 		prev_word = None
-# 		CORRECT_RESULT = [ Correct_Code.GREEN for i in range(5) ]
-# 		tries = 0
+		result = None
+		prev_word = None
+		CORRECT_RESULT = [ Correct_Code.GREEN for i in range(5) ]
+		tries = 0
 
-# 		while not result == CORRECT_RESULT:
-# 			word = self.make_guess(result, prev_word)
-# 			tries += 1
+		while not result == CORRECT_RESULT:
+			word = self.make_guess(result, prev_word)
+			tries += 1
 
-# 			result = self.wordle.get_guess_results(word)
-# 			prev_word = word
+			result = self.wordle.get_guess_results(word)
+			prev_word = word
 
-# 		self.reset()
+		self.reset()
 
-# 		return tries
+		return tries
 
 
-# 	def make_guess(self, prev_result = None, prev_guess = None):
+	def make_guess(self, prev_result = None, prev_guess = None):
+		if prev_result and prev_guess:
+			self.allowed_guesses = Wordle_Solver.filter_words(prev_result, prev_guess, self.allowed_guesses)
+
+		self.train()
+
+		return self.allowed_guesses[0]
 		
 
 def human_solve(wordle):
@@ -229,14 +254,16 @@ def main():
 
 	wordle = Wordle(answer_words, allowed_guesses)
 	
+	# solver = Wordle_Solver_2(wordle, allowed_guesses)
+	solver = Wordle_Solver_2(wordle, answer_words) # use answer_words instead of allowed guesses for now to have a smaller list
+
 	
-	
-	
-	solver = Wordle_Solver(wordle, allowed_guesses)
+	# solver = Wordle_Solver(wordle, allowed_guesses)
 
 	results = []
 	for word in answer_words:
 		try_count = solver.solve(word)
+		# print(word, try_count)
 		results.append({ "word": word, "count": try_count})
 
 	average = sum(map(lambda el: el["count"], results)) / len(answer_words)
