@@ -7,4 +7,19 @@ The code is my own.
 
 ## Usage
 
-`python main.py`
+### For help
+
+`python main.py -h` or `python main.py --help`
+
+```
+  usage: main.py [-h] [-p] [-s [{1,2}]] [--sample-word-count SAMPLE_WORD_COUNT] 
+
+  optional arguments:
+  -h, --help            show this help message and exit
+  -p, --play            play Wordle on the command line
+  -s [{1,2}], --solve [{1,2}]
+                        choose a solver level. Default = 1
+  --sample-word-count SAMPLE_WORD_COUNT
+                        choose the size of the sample list of words to run the
+                        solver with
+```
