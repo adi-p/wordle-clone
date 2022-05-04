@@ -75,7 +75,7 @@ def init_parser():
 	parser.add_argument("-s", "--solve", nargs="?", type=int, choices=[1, 2], const=1, default=1, help="choose a solver level. Default = 1")
 
 	# Sample word count
-	parser.add_argument("--sample-word-count", type=int, help="choose the size of the sample list of words to run the solver with")
+	parser.add_argument("--sample-word-count", "-w", type=int, help="choose the size of the sample list of words to run the solver with")
 
 	return parser
 
