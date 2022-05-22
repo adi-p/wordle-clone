@@ -3,6 +3,7 @@ import sys
 import argparse
 from functools import reduce
 import random
+from colorama import init, Fore
 
 # import numpy as np
 # import pandas as pd
@@ -16,7 +17,6 @@ from wordle import Wordle, Correct_Code
 # - Consider using pandas (maybe numpy) for this
 # - Consider saving some type of data to make solving faster (solver_2)
 # 	In general make solver_2 more efficient
-# - Consider splitting program into multiple files as it is getting larger.
 # - Add a verbose flag and print all guesses made for a word
 # - Add regression tests, unit tests?
 #####################################
@@ -50,13 +50,34 @@ def human_solve(wordle):
 
 		result = wordle.get_guess_results(word)
 		prev_word = word
-		print(word, result)
+		color_print_result(word, result)
 
 	print(f"You won, the word was {wordle.goal}")
 	print(f"You took {guess_count} tries")
 
 
 ### Utilities ###
+
+def color_print_result(word, result):
+
+	def code_to_colour(code):
+		if code == Correct_Code.GREEN:
+			return Fore.GREEN
+		elif code == Correct_Code.YELLOW:
+			return Fore.YELLOW
+		return Fore.WHITE
+
+	colour_result = list(map(code_to_colour, result))
+
+	for colour, letter in zip(colour_result, list(word)):
+		print(colour + letter, end='')
+	print(' [ ', end='')
+
+	for colour, code in zip(colour_result, result):
+		print(colour + str(code), end=' ')
+	print(']')
+
+
 
 def load_words(file):
 	words = []
@@ -80,6 +101,9 @@ def init_parser():
 	return parser
 
 def main():
+
+	# init colored 
+	init(autoreset=True)
 
 	parser = init_parser()
 	args = parser.parse_args()
